@@ -27,7 +27,7 @@ boo:
 
 	#salvar os registradores callee-saved que serão usados (caso sejam usados)
 
-	subq $???, %rsp	 #alocando espaco p RA da f. chamada (tem que ser mult 16) - é 16 mesmo?
+	subq $16, %rsp	 #alocando espaco p RA da f. chamada (tem que ser mult 16) - é 16 mesmo?
     
 WHILE:
     cmpl $0, %esi  #esi pq int n tem 4 bytes e é segundo argumento
@@ -35,19 +35,22 @@ WHILE:
     decl %esi      #n-- (tem q ser depois do je pq muda a flag)
 
     #salvando os registradores que estou usando (rdi, esi, edx)
-    movq %rdi, %rbp
-    movl %esi, %rbp
-    pushl %edx
+    movq %rdi, -16(%rbp)
+    movl %esi, -8(%rbp)
+    movl %edx, -4(%rbp)
 
-	#temp=px->val (?)
-
-    #temp=f(px->val1, val) (?)
-
-
+    #temp=f(px->val1, val) (-> indica que eu quero oq ta dentro do end)
+    movl (%rdi), %edi  #rdi guarda o end da struct e eu qujero oq ta dentro do end que ele guarda
+    movl %edx, %esi
     call f
+    #restaurar os reg que usei
+    movq -16(%rbp), %rdi
+    movl -8(%rbp), %esi
+    movl -4(%rbp), %edx
+    # pegar o valor de retorno de f e colocar no px->val2
+    movl %eax, 4(%rdi)  
 
-	#px++
-    addq $8, %rbx
+    addq $8, %rdi  #8 pq é o tam da struct
     jmp WHILE
 
 FIM:
