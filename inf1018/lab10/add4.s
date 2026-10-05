@@ -1,66 +1,91 @@
 /*
 int f(int x);
 
-void map2 (int* um, int * outro, int n) {
+void map2 (int *um, int *outro, int n) {
   int i;
-  for (i=0; i<n; i++)               i=0   while(i<n)   
-    *(outro+i) = f(*(um+i));    i++
+  for (i = 0; i < n; i++)
+    *(outro+i) = f(*(um+i));
 }
-
-Dicionario:
-rdi - um
-rsi - outro
-edx - n
+*/
+/*
+Dicionário
+Reg     Var
+rdi     um      (1o argumento)
+rsi     outro   (2o argumento)
+edx     n       (3o argumento)
+r10d    i
+eax     temp
+rcx     temp2 (endereco de outro+i)
 */
 
+# não há .data porque não há variáveis globais nem strings constantes
+
 .text
-.globl
+
+#void map2 (int *um, int *outro, int n) {
+.globl map2
 map2:
-	#criar o RA da funcao chamada
-	pushq %rbp 	#salva o RA da funcao chamadora
-	movq %rsp, %rbp 	#RBP aponta p base do RA da f. chamada
-	subq $???, %rsp	 #alocando espaco p RA da f. chamada (tem que ser mult 16) - é 16 mesmo?
-    movl $0, %edi  #int i=0
+    # criar o RA da função chamada
+    pushq   %rbp            # salvando o RA da função chamadora
+    movq    %rsp, %rbp      # RBP aponta para a base do RA da função chamada
+    subq    $32, %rsp       # 8+8+4+4 = 24 bytes, arredondado para 32
 
+    # salvar os registradores callee-saved que serão usados
+    # (nenhum: so uso rax, rcx, r10 e os registradores de argumento)
+
+#   int i;  i = 0
+    movl    $0, %r10d       # i = 0
+
+#   while (i < n)           -> sai se n <= i
 WHILE:
-    cmpl %edi, %edx    #comparando i com n
-    jle FORA_WHILE     #se n for menor ou igual a i
+    cmpl    %r10d, %edx     # compara n com i
+    jle     FORA_WHILE
 
-    #salvando os reg que estou usando
-    movq %rdi, -32(%rbp)
-    movq %rsi, -24(%rbp)
-    movl %edx, -16(%rbp)
+#     temp = *(um + i)
+    movl    %r10d, %eax     # eax = i
+    imull   $4, %eax        # eax = 4 * i   (int ocupa 4 bytes)
+    movslq  %eax, %rax      # rax = (long) eax
+    addq    %rdi, %rax      # rax = endereco de um+i   (rdi intacto)
+    movl    (%rax), %eax    # eax = *(um+i)
 
-    #*(um+i) tem que ir pro edi (primeiro arg int da f)
-    #temp3=um
-    movq %rdi, %r10
+#     temp = f(temp)
+    # salvar os registradores não callee-saved que estão em uso
+    movq    %rdi,   -8(%rbp)    # salva um
+    movq    %rsi,  -16(%rbp)    # salva outro
+    movl    %edx,  -20(%rbp)    # salva n
+    movl    %r10d, -24(%rbp)    # salva i
 
-    #temp4=i (se i=2 e um=1000, entao i+um=1008)
-    movq %edi, %r11d
+    # preparar os argumentos da função f
+    movl    %eax, %edi      # 1o parametro: *(um+i)
+    call    f               # eax = f(*(um+i))
 
-    #multiplicando i por 4
-    imul $4, %r11d
+    # restaurar os registradores não callee-saved salvos
+    movq     -8(%rbp), %rdi     # recupera um
+    movq    -16(%rbp), %rsi     # recupera outro
+    movl    -20(%rbp), %edx     # recupera n
+    movl    -24(%rbp), %r10d    # recupera i
 
-    #temp3=i+temp3
-    addq %r11d, %r10
+#     *(outro + i) = temp
+    movl    %r10d, %ecx     # ecx = i
+    imull   $4, %ecx        # ecx = 4 * i
+    movslq  %ecx, %rcx      # rcx = (long) ecx
+    addq    %rsi, %rcx      # rcx = endereco de outro+i   (rsi intacto)
+    movl    %eax, (%rcx)    # ESCRITA: *(outro+i) = f(*(um+i))
 
-    #temp = *(temp3)
-    movq (%r10), %edi
+#   i++
+    incl    %r10d
+#   }
+    jmp     WHILE
+FORA_WHILE:
 
-    #f(temp)
-    call f
+#   funcao void: nao ha valor de retorno em eax
 
-    #*(outro+i)
-    addl %rdi, 
-    movq %eax, 
+#}
+    # restaurar os registradores callee-saved que foram salvos
+    # (nenhum)
+    leave                   # destruir o RA e restaurar o RA da chamadora
+    ret
 
-    #restaurando os reg que usei
-    movq -32(%rbp), %rdi
-    movq -24(%rbp), %rsi
-    movl -16(%rbp), %edx
+
+
     
-    #i++
-
-
-
-
