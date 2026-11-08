@@ -1,0 +1,11 @@
+function
+v0 = p0 * $2
+ret v0
+end
+function
+v0 = call 0 p0
+v1 = call 0 v0
+v2 = call 0 $5
+v3 = v1 + v2
+ret v3
+end

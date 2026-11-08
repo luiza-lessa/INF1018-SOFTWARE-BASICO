@@ -1,0 +1,8 @@
+function
+zret p0 $10
+v0 = p0 - $1
+zret v0 $20
+v0 = v0 - $1
+zret v0 p0
+ret $40
+end

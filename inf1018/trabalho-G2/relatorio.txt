@@ -1,0 +1,101 @@
+INF1018 - Software Basico - 2026.2
+Trabalho G2: Gerador de Codigo com Funcoes (linguagem LBS)
+Luiza Souza Chaves Lessa Campos - 2512204 - 3WB
+
+O QUE ESTA FUNCIONANDO
+----------------------
+Todos os recursos da linguagem LBS foram implementados e testados:
+  - funcoes que retornam constantes (positivas, zero e negativas) e p0;
+  - atribuicoes com +, - e *, com qualquer combinacao de operandos
+    (variaveis locais v0..v4, parametro p0 e constantes);
+  - retorno incondicional (ret) e condicional (zret), inclusive com
+    constantes como primeiro operando;
+  - varias funcoes no mesmo arquivo, chamadas a funcoes anteriores,
+    chamadas recursivas (simples e dupla) e argumentos constantes no call;
+  - entry aponta para a primeira instrucao da ultima funcao do arquivo.
+
+As variaveis locais e uma copia de p0 ficam no registro de ativacao
+(pilha), de modo que cada chamada recursiva tem as suas proprias variaveis.
+O codigo gerado segue a convencao C/Linux x86-64 (argumento em %edi,
+retorno em %eax, %rsp alinhado em 16 bytes nas chamadas).
+
+O QUE NAO ESTA FUNCIONANDO
+--------------------------
+Nenhuma falha conhecida nos testes realizados.
+Observacao: gera_codigo nao recebe o tamanho do vetor code; cada comando
+gera de 7 a 17 bytes, entao arquivos muito longos exigem um vetor maior
+que 500 bytes (o maior teste abaixo usou 230 bytes).
+
+
+TESTES (compilados com gcc -Wall -Wa,--execstack -o teste main.c gera_codigo.c)
+------
+1) Exemplo do enunciado, f(x) = x + 1
+     function
+     v0 = p0 + $1
+     ret v0
+     end
+   f(10) = 11    f(-1) = 0
+
+2) Operandos variados e constantes negativas
+     function
+     v0 = $-10 - p0
+     v1 = v0 * $-2
+     v2 = v1 + $-7
+     ret v2
+     end
+   f(-4) = 5     f(0) = 13
+
+3) Retorno condicional com varios caminhos
+     function
+     zret p0 $10
+     v0 = p0 - $1
+     zret v0 $20
+     v0 = v0 - $1
+     zret v0 p0
+     ret $40
+     end
+   f(0) = 10   f(1) = 20   f(2) = 2   f(3) = 40   f(-1) = 40
+
+4) Fatorial (exemplo do enunciado)
+     function
+     zret p0 $1
+     v0 = p0 + $0
+     v1 = v0 - $1
+     v1 = call 0 v1
+     v0 = v0 * v1
+     ret v0
+     end
+   f(0) = 1   f(5) = 120   f(10) = 3628800   f(12) = 479001600
+
+5) Soma dos quadrados (exemplo do enunciado)
+     function
+     v0 = p0 * p0
+     ret v0
+     end
+     function
+     zret p0 $0
+     v0 = p0 - $1
+     v1 = call 0 p0
+     v0 = call 1 v0
+     v0 = v0 + v1
+     ret v0
+     end
+   f(0) = 0   f(3) = 14   f(10) = 385   f(100) = 338350
+
+6) Fibonacci (recursao dupla; variaveis locais preservadas entre chamadas)
+     function
+     zret p0 $0
+     v0 = p0 - $1
+     zret v0 $1
+     v1 = call 0 v0
+     v2 = v0 - $1
+     v3 = call 0 v2
+     v4 = v1 + v3
+     ret v4
+     end
+   f(0) = 0   f(1) = 1   f(10) = 55   f(20) = 6765
+
+Tambem foram testados: as cinco variaveis locais simultaneamente,
+preservacao das variaveis e de p0 apos um call, tres funcoes encadeadas,
+recursao com profundidade 10000 e os limites $2147483647 e $-2147483648.
+Resultado: 57 de 57 casos corretos.

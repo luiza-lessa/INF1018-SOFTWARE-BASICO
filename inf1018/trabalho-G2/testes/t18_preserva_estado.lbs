@@ -1,0 +1,21 @@
+function
+v0 = p0 * $3
+v1 = $100 + $0
+v2 = $200 + $0
+v3 = $300 + $0
+v4 = $400 + $0
+ret v0
+end
+function
+v0 = p0 + $1
+v1 = p0 + $2
+v2 = p0 + $3
+v3 = p0 + $4
+v4 = call 0 $7
+v0 = v0 + v1
+v0 = v0 + v2
+v0 = v0 + v3
+v0 = v0 + v4
+v0 = v0 + p0
+ret v0
+end

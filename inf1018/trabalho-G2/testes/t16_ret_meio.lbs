@@ -1,0 +1,6 @@
+function
+v0 = p0 + $1
+ret v0
+v0 = $99 + $0
+ret v0
+end
